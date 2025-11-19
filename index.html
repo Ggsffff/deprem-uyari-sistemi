@@ -47,7 +47,7 @@
         const FIREBASE_PROJE_ID = 'deprem-uyari-sistemi-5e7e0-default-rtdb'; 
         const FIREBASE_AUTH = 'K4MWY28KzS8YHubcyg3GbESnCNGvEEqJXLkzKuV1'; 
         
-        // REST API URL'si
+        // REST API URL'si (Veri Çekme)
         const FIREBASE_API_URL = `https://${FIREBASE_PROJE_ID}.firebaseio.com/anlik_durum.json?auth=${FIREBASE_AUTH}`; 
 
         const durumKutusu = document.getElementById('durumKutusu');
@@ -58,7 +58,7 @@
 
         async function anlikVeriCek() {
             try {
-                // HTTP GET isteği ile veriyi çekiyoruz (Özgün REST API çözümü)
+                // HTTP GET isteği ile veriyi çekiyoruz
                 const response = await fetch(FIREBASE_API_URL); 
                 const gelenVeri = await response.json(); 
                 
@@ -69,8 +69,7 @@
                 
             } catch (error) {
                 console.error("Veri çekilirken hata oluştu:", error);
-                // Artık bu hatayı almamalısın, çünkü anahtarlar doğru
-                durumMesaji.textContent = "VERİ ÇEKİLEMEDİ (BAĞLANTI VEYA YETKİLENDİRME HATASI)";
+                durumMesaji.textContent = "BAĞLANTI VEYA YETKİLENDİRME HATASI";
                 durumKutusu.className = 'durum'; 
             }
         }
