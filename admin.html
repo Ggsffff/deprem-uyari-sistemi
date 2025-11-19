@@ -3,72 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deprem Kontrol Paneli - Admin</title>
+    <title>Deprem Erken Uyarı Sistemi</title>
     <style>
         /* CSS Stilleri */
-        body { font-family: sans-serif; padding: 20px; text-align: center; background-color: #f0f0f5; }
-        h1 { color: #333; }
-        .button-container { margin-top: 50px; }
-        button { padding: 15px 30px; font-size: 1.2em; margin: 10px; cursor: pointer; border: none; border-radius: 8px; color: white; transition: transform 0.2s; }
-        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        #btn-normal { background-color: #28a745; }
-        #btn-uyari { background-color: #dc3545; }
-        #mesaj { margin-top: 30px; font-size: 1.1em; }
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
+        header { background-color: #007bff; color: white; padding: 20px; text-align: center; }
+        .container { padding: 20px; }
+        #durumKutusu {
+            padding: 30px; margin-bottom: 20px; border-radius: 12px; text-align: center;
+            color: white; transition: background-color 0.5s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .normal { background-color: #28a745; }
+        .uyari { background-color: #dc3545; animation: nabiz 1s infinite; }
+        @keyframes nabiz { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        #durumMesaji { font-size: 2.5em; margin: 10px 0 0 0; }
+        .gecmis h3 { border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .gecmis ul { list-style-type: none; padding: 0; }
+        .gecmis li { background: white; padding: 10px; margin-bottom: 5px; border-left: 5px solid #ffc107; border-radius: 4px; color: #333; }
     </style>
 </head>
 <body>
 
-    <h1>🚨 Manuel Veri Gönderme Paneli</h1>
-    <p>Bu arayüz, Deneyap Kart'ın (donanım ekibinin) Firebase'e göndereceği veriyi simüle eder.</p>
+    <header>
+        <h1>🇹🇷 Deprem Farkındalık Projesi</h1>
+    </header>
 
-    <div class="button-container">
-        <button id="btn-normal" onclick="veriGonder('NORMAL')">🟢 NORMAL GÖNDER</button>
-        <button id="btn-uyari" onclick="veriGonder('UYARI')">🔴 UYARI GÖNDER</button>
+    <div class="container">
+        <div id="durumKutusu" class="durum normal">
+            <p>Anlık Kolon Durumu</p>
+            <h2 id="durumMesaji">VERİ YÜKLENİYOR...</h2>
+        </div>
+
+        <div class="gecmis">
+            <h3>🔔 Son Uyarılar</h3>
+            <ul id="uyariListesi">
+                <li>Henüz uyarı yok.</li>
+            </ul>
+        </div>
     </div>
 
-    <p id="mesaj">Lütfen bir durum seçerek Firebase'e veri gönderin.</p>
-
     <script>
-        // KANKA DİKKAT: Firebase proje ID'ni ve Secret Key'ini buraya gir!
-        const FIREBASE_PROJE_ID = '[SENİN_FIREBASE_PROJE_ID\'N]'; 
-        const FIREBASE_AUTH = '[SENİN_FIREBASE_SECRET_KEY\'İN]'; 
+        // KANKA DİKKAT: BİLGİLERİN BURADA GÜNCEL!
+        const FIREBASE_PROJE_ID = 'deprem-uyari-sistemi-5e7e0-default-rtdb'; 
+        const FIREBASE_AUTH = 'K4MWY28KzS8YHubcyg3GbESnCNGvEEqJXLkzKuV1'; 
         
-        // Veri yolu
-        const ANLIK_DURUM_PATH = "/anlik_durum.json"; 
-        
-        async function veriGonder(durum) {
-            const mesajElementi = document.getElementById('mesaj');
-            mesajElementi.textContent = "Veri Gönderiliyor...";
-            mesajElementi.style.color = '#333';
+        // REST API URL'si (Veri Çekme)
+        const FIREBASE_API_URL = `https://${FIREBASE_PROJE_ID}.firebaseio.com/anlik_durum.json?auth=${FIREBASE_AUTH}`; 
 
-            // Firebase REST API URL'sini oluşturma
-            const url = `https://${FIREBASE_PROJE_ID}.firebaseio.com${ANLIK_DURUM_PATH}?auth=${FIREBASE_AUTH}`;
+        const durumKutusu = document.getElementById('durumKutusu');
+        const durumMesaji = document.getElementById('durumMesaji');
+        const uyariListesi = document.getElementById('uyariListesi');
 
-            // Gönderilecek JSON verisi (Firebase protokolü gereği string tırnak içinde)
-            const payload = JSON.stringify(durum); 
+        let sonDurum = "YÜKLENİYOR"; 
 
+        async function anlikVeriCek() {
             try {
-                const response = await fetch(url, {
-                    method: 'PUT', // Veriyi tamamen üzerine yazar
-                    headers: { 'Content-Type': 'application/json' },
-                    body: payload
-                });
-
-                if (response.ok) {
-                    mesajElementi.textContent = `✅ Başarıyla Gönderildi! Durum: ${durum}`;
-                    mesajElementi.style.color = (durum === 'UYARI' ? '#dc3545' : '#28a745');
-                } else {
-                    // 404 gibi bir hata dönerse
-                    mesajElementi.textContent = `❌ Hata oluştu! HTTP Kodu: ${response.status}. Anahtar/URL'yi kontrol et.`;
-                    mesajElementi.style.color = '#333';
-                }
-
+                // HTTP GET isteği ile veriyi çekiyoruz
+                const response = await fetch(FIREBASE_API_URL); 
+                const gelenVeri = await response.json(); 
+                
+                // Gelen veriyi temizle ve büyük harf yap (UYARI veya NORMAL)
+                const mevcutDurum = String(gelenVeri).toUpperCase().replace(/"/g, ''); 
+                
+                ekraniGuncelle(mevcutDurum);
+                
             } catch (error) {
-                console.error("Gönderme sırasında ağ hatası:", error);
-                mesajElementi.textContent = `❌ Ağ Hatası: Veri gönderilemedi. Konsolu kontrol et.`;
-                mesajElementi.style.color = '#333';
+                console.error("Veri çekilirken hata oluştu:", error);
+                durumMesaji.textContent = "BAĞLANTI VEYA YETKİLENDİRME HATASI";
+                durumKutusu.className = 'durum'; 
             }
         }
+
+        function ekraniGuncelle(yeniDurum) {
+            
+            durumMesaji.textContent = yeniDurum;
+            
+            if (yeniDurum === 'UYARI') {
+                durumKutusu.className = 'durum uyari';
+                
+                if (sonDurum !== 'UYARI') {
+                    // Durum NORMAL'den UYARI'ya geçtiyse kaydet
+                    uyariKaydet("UYARI! Kolonda beklenmeyen hareket tespiti!");
+                }
+                
+            } else if (yeniDurum === 'NORMAL') {
+                durumKutusu.className = 'durum normal';
+            } else {
+                durumKutusu.className = 'durum';
+                durumMesaji.textContent = 'Bilinmeyen Durum (' + yeniDurum + ')';
+            }
+            
+            sonDurum = yeniDurum; 
+        }
+
+        function uyariKaydet(mesaj) {
+            const tarih = new Date();
+            const zaman = tarih.toLocaleTimeString('tr-TR');
+            
+            const yeniUyari = document.createElement('li');
+            yeniUyari.textContent = `${zaman} - ${mesaj}`;
+            
+            if(uyariListesi.firstChild && uyariListesi.firstChild.textContent === 'Henüz uyarı yok.'){
+                uyariListesi.innerHTML = '';
+            }
+            uyariListesi.prepend(yeniUyari);
+            
+            // Sadece son 5 uyarıyı tut
+            while (uyariListesi.children.length > 5) {
+                uyariListesi.removeChild(uyariListesi.lastChild);
+            }
+        }
+
+        // Fonksiyonu hemen çalıştır ve ardından her 3 saniyede bir tekrar çalıştır
+        anlikVeriCek();
+        setInterval(anlikVeriCek, 3000); 
     </script>
 
 </body>
