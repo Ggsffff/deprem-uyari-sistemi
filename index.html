@@ -43,9 +43,9 @@
     </div>
 
     <script>
-        // KANKA DİKKAT: Firebase proje ID'ni ve Secret Key'ini buraya gir!
-        const FIREBASE_PROJE_ID = '[SENİN_FIREBASE_PROJE_ID\'N]'; 
-        const FIREBASE_AUTH = '[SENİN_FIREBASE_SECRET_KEY\'İN]'; 
+        // KANKA DİKKAT: BİLGİLERİN BURADA GÜNCEL!
+        const FIREBASE_PROJE_ID = 'deprem-uyari-sistemi-5e7e0-default-rtdb'; 
+        const FIREBASE_AUTH = 'K4MWY28KzS8YHubcyg3GbESnCNGvEEqJXLkzKuV1'; 
         
         // REST API URL'si
         const FIREBASE_API_URL = `https://${FIREBASE_PROJE_ID}.firebaseio.com/anlik_durum.json?auth=${FIREBASE_AUTH}`; 
@@ -69,7 +69,8 @@
                 
             } catch (error) {
                 console.error("Veri çekilirken hata oluştu:", error);
-                durumMesaji.textContent = "BAĞLANTI VEYA YETKİLENDİRME HATASI";
+                // Artık bu hatayı almamalısın, çünkü anahtarlar doğru
+                durumMesaji.textContent = "VERİ ÇEKİLEMEDİ (BAĞLANTI VEYA YETKİLENDİRME HATASI)";
                 durumKutusu.className = 'durum'; 
             }
         }
