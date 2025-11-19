@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deprem Kontrol Paneli - Admin</title>
+    <style>
+        /* CSS Stilleri */
+        body { font-family: sans-serif; padding: 20px; text-align: center; background-color: #f0f0f5; }
+        h1 { color: #333; }
+        .button-container { margin-top: 50px; }
+        button { padding: 15px 30px; font-size: 1.2em; margin: 10px; cursor: pointer; border: none; border-radius: 8px; color: white; transition: transform 0.2s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        #btn-normal { background-color: #28a745; }
+        #btn-uyari { background-color: #dc3545; }
+        #mesaj { margin-top: 30px; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+
+    <h1>🚨 Manuel Veri Gönderme Paneli</h1>
+    <p>Bu arayüz, Deneyap Kart'ın (donanım ekibinin) Firebase'e göndereceği veriyi simüle eder.</p>
+
+    <div class="button-container">
+        <button id="btn-normal" onclick="veriGonder('NORMAL')">🟢 NORMAL GÖNDER</button>
+        <button id="btn-uyari" onclick="veriGonder('UYARI')">🔴 UYARI GÖNDER</button>
+    </div>
+
+    <p id="mesaj">Lütfen bir durum seçerek Firebase'e veri gönderin.</p>
+
+    <script>
+        // KANKA DİKKAT: Firebase proje ID'ni ve Secret Key'ini buraya gir!
+        const FIREBASE_PROJE_ID = '[SENİN_FIREBASE_PROJE_ID\'N]'; 
+        const FIREBASE_AUTH = '[SENİN_FIREBASE_SECRET_KEY\'İN]'; 
+        
+        // Veri yolu
+        const ANLIK_DURUM_PATH = "/anlik_durum.json"; 
+        
+        async function veriGonder(durum) {
+            const mesajElementi = document.getElementById('mesaj');
+            mesajElementi.textContent = "Veri Gönderiliyor...";
+            mesajElementi.style.color = '#333';
+
+            // Firebase REST API URL'sini oluşturma
+            const url = `https://${FIREBASE_PROJE_ID}.firebaseio.com${ANLIK_DURUM_PATH}?auth=${FIREBASE_AUTH}`;
+
+            // Gönderilecek JSON verisi (Firebase protokolü gereği string tırnak içinde)
+            const payload = JSON.stringify(durum); 
+
+            try {
+                const response = await fetch(url, {
+                    method: 'PUT', // Veriyi tamamen üzerine yazar
+                    headers: { 'Content-Type': 'application/json' },
+                    body: payload
+                });
+
+                if (response.ok) {
+                    mesajElementi.textContent = `✅ Başarıyla Gönderildi! Durum: ${durum}`;
+                    mesajElementi.style.color = (durum === 'UYARI' ? '#dc3545' : '#28a745');
+                } else {
+                    // 404 gibi bir hata dönerse
+                    mesajElementi.textContent = `❌ Hata oluştu! HTTP Kodu: ${response.status}. Anahtar/URL'yi kontrol et.`;
+                    mesajElementi.style.color = '#333';
+                }
+
+            } catch (error) {
+                console.error("Gönderme sırasında ağ hatası:", error);
+                mesajElementi.textContent = `❌ Ağ Hatası: Veri gönderilemedi. Konsolu kontrol et.`;
+                mesajElementi.style.color = '#333';
+            }
+        }
+    </script>
+
+</body>
+</html>

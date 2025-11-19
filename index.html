@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deprem Erken Uyarı Sistemi</title>
+    <style>
+        /* CSS Stilleri */
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
+        header { background-color: #007bff; color: white; padding: 20px; text-align: center; }
+        .container { padding: 20px; }
+        #durumKutusu {
+            padding: 30px; margin-bottom: 20px; border-radius: 12px; text-align: center;
+            color: white; transition: background-color 0.5s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .normal { background-color: #28a745; }
+        .uyari { background-color: #dc3545; animation: nabiz 1s infinite; }
+        @keyframes nabiz { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        #durumMesaji { font-size: 2.5em; margin: 10px 0 0 0; }
+        .gecmis h3 { border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .gecmis ul { list-style-type: none; padding: 0; }
+        .gecmis li { background: white; padding: 10px; margin-bottom: 5px; border-left: 5px solid #ffc107; border-radius: 4px; color: #333; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🇹🇷 Deprem Farkındalık Projesi</h1>
+    </header>
+
+    <div class="container">
+        <div id="durumKutusu" class="durum normal">
+            <p>Anlık Kolon Durumu</p>
+            <h2 id="durumMesaji">VERİ YÜKLENİYOR...</h2>
+        </div>
+
+        <div class="gecmis">
+            <h3>🔔 Son Uyarılar</h3>
+            <ul id="uyariListesi">
+                <li>Henüz uyarı yok.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // KANKA DİKKAT: Firebase proje ID'ni ve Secret Key'ini buraya gir!
+        const FIREBASE_PROJE_ID = '[SENİN_FIREBASE_PROJE_ID\'N]'; 
+        const FIREBASE_AUTH = '[SENİN_FIREBASE_SECRET_KEY\'İN]'; 
+        
+        // REST API URL'si
+        const FIREBASE_API_URL = `https://${FIREBASE_PROJE_ID}.firebaseio.com/anlik_durum.json?auth=${FIREBASE_AUTH}`; 
+
+        const durumKutusu = document.getElementById('durumKutusu');
+        const durumMesaji = document.getElementById('durumMesaji');
+        const uyariListesi = document.getElementById('uyariListesi');
+
+        let sonDurum = "YÜKLENİYOR"; 
+
+        async function anlikVeriCek() {
+            try {
+                // HTTP GET isteği ile veriyi çekiyoruz (Özgün REST API çözümü)
+                const response = await fetch(FIREBASE_API_URL); 
+                const gelenVeri = await response.json(); 
+                
+                // Gelen veriyi temizle ve büyük harf yap (UYARI veya NORMAL)
+                const mevcutDurum = String(gelenVeri).toUpperCase().replace(/"/g, ''); 
+                
+                ekraniGuncelle(mevcutDurum);
+                
+            } catch (error) {
+                console.error("Veri çekilirken hata oluştu:", error);
+                durumMesaji.textContent = "BAĞLANTI VEYA YETKİLENDİRME HATASI";
+                durumKutusu.className = 'durum'; 
+            }
+        }
+
+        function ekraniGuncelle(yeniDurum) {
+            
+            durumMesaji.textContent = yeniDurum;
+            
+            if (yeniDurum === 'UYARI') {
+                durumKutusu.className = 'durum uyari';
+                
+                if (sonDurum !== 'UYARI') {
+                    // Durum NORMAL'den UYARI'ya geçtiyse kaydet
+                    uyariKaydet("UYARI! Kolonda beklenmeyen hareket tespiti!");
+                }
+                
+            } else if (yeniDurum === 'NORMAL') {
+                durumKutusu.className = 'durum normal';
+            } else {
+                durumKutusu.className = 'durum';
+                durumMesaji.textContent = 'Bilinmeyen Durum (' + yeniDurum + ')';
+            }
+            
+            sonDurum = yeniDurum; 
+        }
+
+        function uyariKaydet(mesaj) {
+            const tarih = new Date();
+            const zaman = tarih.toLocaleTimeString('tr-TR');
+            
+            const yeniUyari = document.createElement('li');
+            yeniUyari.textContent = `${zaman} - ${mesaj}`;
+            
+            if(uyariListesi.firstChild && uyariListesi.firstChild.textContent === 'Henüz uyarı yok.'){
+                uyariListesi.innerHTML = '';
+            }
+            uyariListesi.prepend(yeniUyari);
+            
+            // Sadece son 5 uyarıyı tut
+            while (uyariListesi.children.length > 5) {
+                uyariListesi.removeChild(uyariListesi.lastChild);
+            }
+        }
+
+        // Fonksiyonu hemen çalıştır ve ardından her 3 saniyede bir tekrar çalıştır
+        anlikVeriCek();
+        setInterval(anlikVeriCek, 3000); 
+    </script>
+
+</body>
+</html>
